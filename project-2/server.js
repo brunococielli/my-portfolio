@@ -1,23 +1,14 @@
 import express from "express"
-import fs from "fs"
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "path"
+import { fileURLToPath } from "url"
+import { users, saveUsers } from "./usersStore.js"
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const app = express()
 
 app.use(express.json())
 app.use(express.static("public"))
-
-let users = []
-
-try {
-	const data = fs.readFileSync("./users.json", "utf8")
-	users = JSON.parse(data)
-} catch (err) {
-	console.log("Could not read users.json, starting with empty list")
-}
 
 app.post("/register", (req, res) => {
 	const { email, password } = req.body
@@ -40,9 +31,23 @@ app.post("/register", (req, res) => {
 
 	users.push(newUser)
 
-	fs.writeFileSync("./users.json", JSON.stringify(users, null, 2))
+	saveUsers()
 
 	res.send("User created successfully")
+})
+
+app.post("/login", (req, res) => {
+	const { email, password } = req.body
+
+	if (!email || !password)
+		return res.status(400).send("missing email or password")
+
+	const account = users.find((user) => {
+		return user.email === email && user.password === password
+	})
+
+	if (account) return res.status(200).send("user found")
+	else return res.status(400).send("email or password incorrect")
 })
 
 app.get("/users", (req, res) => {
