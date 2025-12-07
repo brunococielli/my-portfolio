@@ -15,26 +15,34 @@ const createUser = async () => {
 	emailInp.value = ""
 	passwordInp.value = ""
 
+	const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+	if (!isValidEmail.test(email)) return alert("Invalid email address!")
+
 	try {
-		const res = await fetch("/register", {
+		const registerRes = await fetch("/register", {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({
-				email,
-				password
-			})
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, password })
 		})
 
-		if (!res.ok) {
-			const errorText = await res.text()
-			alert(errorText)
-			return
+		if (!registerRes.ok) {
+			const errorText = await registerRes.text()
+			return alert(errorText)
 		}
 
-		const data = await res.text()
-		alert(data)
+		const emailRes = await fetch("/send-email", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email })
+		})
+
+		if (!emailRes.ok) {
+			const errorText = await emailRes.text()
+			return console.error(errorText)
+		}
+
+		const message = await registerRes.text()
+		alert(message)
 
 	} catch (err) {
 		console.error(err)

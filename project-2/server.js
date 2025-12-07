@@ -2,7 +2,10 @@ import express from "express"
 import path from "path"
 import { fileURLToPath } from "url"
 import { users, saveUsers } from "./usersStore.js"
+import "dotenv/config"
+import { Resend } from "resend"
 
+const resend = new Resend(process.env.RESEND_API_KEY)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const app = express()
@@ -48,6 +51,24 @@ app.post("/login", (req, res) => {
 
 	if (account) return res.status(200).send("user found")
 	else return res.status(400).send("email or password incorrect")
+})
+
+app.post("/send-email", async (req, res) => {
+	const { email } = req.body
+
+	try {
+		const response = await resend.emails.send({
+			from: "Acme <onboarding@resend.dev>",
+			to: email,
+			subject: "Welcome!",
+			html: "<p>Your account was created successfully!</p>"
+		})
+
+		res.status(200).json({ ok: true, response })
+	}	catch (err) {
+		console.error(err)
+    res.status(500).json({ ok: false, error: err.message })
+	}
 })
 
 app.get("/users", (req, res) => {
