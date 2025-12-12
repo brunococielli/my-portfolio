@@ -20,7 +20,7 @@ input {
 	font-size: inherit;
 }
 
-#backBtn, #registerBtn {
+#backBtn, #registerBtn, #logoutBtn, #uploadBtn{
 	display: inline-block;
 	margin: 10px;
 }

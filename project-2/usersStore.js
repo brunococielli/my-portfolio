@@ -1,16 +1,51 @@
 import fs from "fs"
 
 let users = []
+let sessions = {}
 
-try {
-	const data = fs.readFileSync("./users.json", "utf8")
-	users = JSON.parse(data)
-} catch (err) {
-	console.log("Could not read users.json, starting with empty list")
+const loadUsers = () => {
+	try {
+		const data = fs.readFileSync("./users.json", "utf8")
+		users = JSON.parse(data)
+	} catch (err) {
+		console.log("Could not read users.json, starting with empty list")
+	}
 }
 
 const saveUsers = () => {
 	fs.writeFileSync("./users.json", JSON.stringify(users, null, 2))
 }
 
-export { users, saveUsers }
+const loadSessions = () => {
+  try {
+    const raw = fs.readFileSync("./sessions.json", "utf8")
+
+    // parse file
+    const data = JSON.parse(raw)
+
+    // clear current object without replacing it
+    Object.keys(sessions).forEach(key => delete sessions[key])
+
+    // copy keys into the same object reference
+    Object.assign(sessions, data)
+
+  } catch (err) {
+    console.log("Could not read sessions.json, starting empty")
+    
+    // also empty the in-memory object
+    Object.keys(sessions).forEach(key => delete sessions[key])
+  }
+}
+
+const saveSessions = () => {
+  fs.writeFileSync("./sessions.json", JSON.stringify(sessions, null, 2));
+}
+
+const createToken = () => {
+  return Math.random().toString(36).slice(2) + Date.now();
+}
+
+loadUsers()
+loadSessions()
+
+export { users, saveUsers, sessions, loadSessions, saveSessions, createToken }

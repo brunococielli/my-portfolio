@@ -7,3 +7,21 @@ document.addEventListener("DOMContentLoaded", () => {
     logBtn.addEventListener("click", goLogInPage)
     forgotBtn.addEventListener("click", goRegisterPage)
 })
+
+const token = localStorage.getItem("token")
+const checkToken = async () => {
+  if (!token) return
+
+  try {
+    const res = await fetch("/check", {
+      headers: { Authorization: token }
+    })
+
+  if (res.ok) window.location.href = "/html/storepage.html"
+
+	} catch (err) {
+		console.error("Network error:", err) 
+	}
+}
+
+checkToken()

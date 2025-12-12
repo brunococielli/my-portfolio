@@ -36,6 +36,9 @@ const logUser = async () => {
 		emailInp.value = ""
 		passwordInp.value = ""
 
+		const data = await res.json()
+  	localStorage.setItem("token", data.token)
+
 		window.location.href = "/html/storepage.html"
 	} catch (err) {
 		console.error(err)
@@ -49,3 +52,7 @@ const goForgotPage = () => {
 
 forgotBtn.addEventListener("click", goForgotPage)
 logBtn.addEventListener("click", logUser)
+
+document.addEventListener("keydown", event => {
+	if (event.key === "Enter") logUser()
+})

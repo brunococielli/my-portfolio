@@ -1,7 +1,14 @@
 import express from "express"
 import path from "path"
 import { fileURLToPath } from "url"
-import { users, saveUsers } from "./usersStore.js"
+import { 
+	users,
+	saveUsers,
+	sessions,
+	loadSessions,
+	saveSessions, 
+	createToken 
+} from "./usersStore.js"
 import "dotenv/config"
 import { Resend } from "resend"
 
@@ -49,22 +56,33 @@ app.post("/login", (req, res) => {
 		return user.email === email && user.password === password
 	})
 
-	if (account) return res.status(200).send("user found")
-	else return res.status(400).send("email or password incorrect")
+	if (account) {
+		loadSessions()
+
+		const token = createToken()
+
+		sessions[token] = email
+		saveSessions()
+		
+		res.json({ token })
+	}
+	else {
+		return res.status(400).send("email or password incorrect")
+	}
 })
 
 app.post("/send-email", async (req, res) => {
 	const { email } = req.body
 
 	try {
-		const response = await resend.emails.send({
-			from: "Acme <onboarding@resend.dev>",
+		const emailResponse = await resend.emails.send({
+			from: "Ted <onboarding@resend.dev>",
 			to: email,
 			subject: "Welcome!",
 			html: "<p>Your account was created successfully!</p>"
 		})
 
-		res.status(200).json({ ok: true, response })
+		res.status(200).json({ ok: true })
 	}	catch (err) {
 		console.error(err)
     res.status(500).json({ ok: false, error: err.message })
@@ -79,8 +97,8 @@ app.post("/forgot-password", async (req, res) => {
 	if (!user) return res.status(404).send("User doesn't exist")
 
 	try {
-		const response = await resend.emails.send({
-			from: "Acme <onboarding@resend.dev>",
+		const emailResponse = await resend.emails.send({
+			from: "Ted <onboarding@resend.dev>",
 			to: email,
 			subject: "We got you!",
 			html: `<p>Your password is: ${user.password} </p>`
@@ -93,12 +111,40 @@ app.post("/forgot-password", async (req, res) => {
 	}
 })
 
+app.post("/logout", async (req, res) => {
+	const token = req.headers.authorization
+
+	if (!token) return res.status(401).send("No token")
+
+	loadSessions()
+
+	delete sessions[token]
+
+	saveSessions()
+
+  res.send("Logged out")
+})
+
 app.get("/users", (req, res) => {
 	res.json(users)
 })
 
 app.get("/", (req, res) => {
 	 res.sendFile(__dirname + "/public/html/index.html")
+})
+
+app.get("/check", (req, res) => {
+  const token = req.headers.authorization
+
+  if (!token) return res.status(401).send("No token")
+
+	loadSessions()
+
+  const email = sessions[token]
+
+  if (!email) return res.status(401).send("Invalid token")
+
+  res.status(200).send("OK")
 })
 
 app.listen(3000, () => {
