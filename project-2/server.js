@@ -1,21 +1,14 @@
 import express from "express"
 import path from "path"
 import { fileURLToPath } from "url"
-import { 
-	users,
-	saveUsers,
-	sessions,
-	loadSessions,
-	saveSessions, 
-	createToken,
-	generateResetToken
-} from "./usersStore.js"
 import "dotenv/config"
 import { Resend } from "resend"
 import bcrypt from "bcrypt"
 import crypto from "crypto"
+import prisma from "./db.js"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const app = express()
@@ -23,104 +16,134 @@ const app = express()
 app.use(express.json())
 app.use(express.static("public"))
 
+const sessions = {}
+
+const createToken = () =>
+  Math.random().toString(36).slice(2) + Date.now()
+
+const generateResetToken = () =>
+  crypto.randomBytes(32).toString("hex")
+
 app.post("/register", async (req, res) => {
-	const { email, password } = req.body
+  const { email, password } = req.body
 
-	if (!email || !password) 
-		return res.status(400).send("missing email or password")
+  if (!email || !password)
+    return res.status(400).send("missing email or password")
 
-	const exists = users.find((user) => {
-		return user.email === email
-	})
+  const exists = await prisma.user.findUnique({
+    where: { email }
+  })
 
-	if (exists) 
-		return res.status(409).send("this email is alread signed in")
+  if (exists)
+    return res.status(409).send("this email is alread signed in")
 
-	const hashedPassword = await bcrypt.hash(password, 10)
+  const hashedPassword = await bcrypt.hash(password, 10)
 
-	const newUser = {
-		id: Date.now(),
-		email,
-		password: hashedPassword
-	}
+  await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword
+    }
+  })
 
-	users.push(newUser)
+  res.send("User created successfully")
+})
 
-	saveUsers()
+app.post("/send-email", async (req, res) => {
+  const { email } = req.body
 
-	res.send("User created successfully")
+  try {
+    await resend.emails.send({
+      from: "Ted <onboarding@resend.dev>",
+      to: email,
+      subject: "Welcome!",
+      html: "<p>Your account was created successfully!</p>"
+    })
+
+    res.send("Email sent")
+  } catch (err) {
+    console.error(err)
+    res.status(500).send("Failed to send email")
+  }
 })
 
 app.post("/login", async (req, res) => {
-	const { email, password } = req.body
+  const { email, password } = req.body
 
-	if (!email || !password)
-		return res.status(400).send("missing email or password")
+  if (!email || !password)
+    return res.status(400).send("missing email or password")
 
-  const user = users.find(u => u.email === email)
+  const user = await prisma.user.findUnique({
+    where: { email }
+  })
+
   if (!user) return res.status(400).send("Invalid credentials")
 
   const match = await bcrypt.compare(password, user.password)
   if (!match) return res.status(400).send("Invalid credentials")
 
   const token = createToken()
-  sessions[token] = email
-  saveSessions()
+  sessions[token] = user.email
 
   res.json({ token })
 })
 
-app.post("/send-email", async (req, res) => {
-	const { email } = req.body
+app.post("/logout", (req, res) => {
+  const token = req.headers.authorization
+  if (!token) return res.status(401).send("No token")
 
-	try {
-		const emailResponse = await resend.emails.send({
-			from: "Ted <onboarding@resend.dev>",
-			to: email,
-			subject: "Welcome!",
-			html: "<p>Your account was created successfully!</p>"
-		})
+  delete sessions[token]
+  res.send("Logged out")
+})
 
-		res.status(200).json({ ok: true })
-	}	catch (err) {
-		console.error(err)
-    res.status(500).json({ ok: false, error: err.message })
-	}
+app.get("/check", (req, res) => {
+  const token = req.headers.authorization
+  if (!token) return res.status(401).send("No token")
+
+  const email = sessions[token]
+  if (!email) return res.status(401).send("Invalid token")
+
+  res.send("OK")
 })
 
 app.post("/forgot-password", async (req, res) => {
-	const { email } = req.body
+  const { email } = req.body
 
-	const user = users.find(user => user.email === email)
+  const user = await prisma.user.findUnique({
+    where: { email }
+  })
 
-	if (!user) return res.status(404).send("User doesn't exist")
+  if (!user) return res.status(404).send("User doesn't exist")
 
-	const resetToken = generateResetToken()
-
-  user.resetToken = crypto
+  const resetToken = generateResetToken()
+  const hashedToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex")
 
-  user.resetTokenExpires = Date.now() + 15 * 60 * 1000 
+  await prisma.user.update({
+    where: { email },
+    data: {
+      resetToken: hashedToken,
+      resetTokenExpires: new Date(Date.now() + 15 * 60 * 1000)
+    }
+  })
 
-  saveUsers()
+  const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`
 
-	const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`
+  try {
+    await resend.emails.send({
+      from: "Ted <onboarding@resend.dev>",
+      to: email,
+      subject: "Reset your password!",
+      html: `<a href="${resetLink}">Reset password link.</a>`
+    })
 
-	try {
-		const emailResponse = await resend.emails.send({
-			from: "Ted <onboarding@resend.dev>",
-			to: email,
-			subject: "Reset your password!",
-			html: `<a href="${resetLink}">Reset password link.</a>`
-		})
-
-		res.status(200).send("If email exists, reset link sent")
-	}	catch (err) {
-		console.error(err)
-    res.status(500).json({ ok: false, error: err.message })
-	}
+    res.send("If email exists, reset link sent")
+  } catch (err) {
+    console.error(err)
+    res.status(500).send("Failed to send reset email")
+  }
 })
 
 app.post("/reset-password", async (req, res) => {
@@ -131,56 +154,31 @@ app.post("/reset-password", async (req, res) => {
     .update(token)
     .digest("hex")
 
-  const user = users.find(u =>
-    u.resetToken === hashedToken &&
-    u.resetTokenExpires > Date.now()
-  )
+  const user = await prisma.user.findFirst({
+    where: {
+      resetToken: hashedToken,
+      resetTokenExpires: {
+        gt: new Date()
+      }
+    }
+  })
 
   if (!user) return res.status(400).send("Invalid or expired token")
 
-  user.password = await bcrypt.hash(newPassword, 10)
-  user.resetToken = null
-  user.resetTokenExpires = null
-
-  saveUsers()
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: await bcrypt.hash(newPassword, 10),
+      resetToken: null,
+      resetTokenExpires: null
+    }
+  })
 
   res.send("Password updated")
 })
 
-app.post("/logout", async (req, res) => {
-	const token = req.headers.authorization
-
-	if (!token) return res.status(401).send("No token")
-
-	loadSessions()
-
-	delete sessions[token]
-
-	saveSessions()
-
-  res.send("Logged out")
-})
-
-app.get("/users", (req, res) => {
-	res.json(users)
-})
-
 app.get("/", (req, res) => {
-	 res.sendFile(__dirname + "/public/html/index.html")
-})
-
-app.get("/check", (req, res) => {
-  const token = req.headers.authorization
-
-  if (!token) return res.status(401).send("No token")
-
-	loadSessions()
-
-  const email = sessions[token]
-
-  if (!email) return res.status(401).send("Invalid token")
-
-  res.status(200).send("OK")
+  res.sendFile(__dirname + "/public/html/index.html")
 })
 
 app.get("/reset-password", (req, res) => {
@@ -190,5 +188,5 @@ app.get("/reset-password", (req, res) => {
 })
 
 app.listen(3000, () => {
-	console.log("server is listening in port 3000!")
+  console.log("server is listening in port 3000!")
 })
