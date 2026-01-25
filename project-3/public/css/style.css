@@ -1,0 +1,119 @@
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center;
+  background-color: grey; 
+  font-family: "Press Start 2P", monospace;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+#clock {
+	display: inline;
+	font-size: 6rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+	padding-top: 50px;
+	padding-bottom: 80px;
+}
+
+button {
+  background-color: #333;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+	font-family: "Press Start 2P", monospace;
+}
+
+button:hover {
+  background-color: #555;
+}
+
+button:active {
+  transform: scale(0.95);
+  background-color: #888; 
+  transition: background-color 0.1s, transform 0.1s;
+}
+
+#settings {
+  display: none; 
+  margin-top: 20px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 25px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+label {
+  display: block;
+  margin: 8px 0;
+}
+
+input {
+  width: 85px;
+  padding: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit; 
+  font-size: 1rem;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s ease;
+	font-family: "Press Start 2P", monospace;
+}
+
+input:focus {
+  border-color: orange;
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 6px orange
+}
+
+input:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+#change {
+	background-color: orange;
+}
+
+#change:hover {
+	background-color: rgb(204, 135, 6)
+}
+
+.statsLabel {
+	color: rgb(245, 152, 152);
+}
+
+.flash {
+  transform: scale(0.95);
+  background-color: #888;
+  transition: background-color 0.1s, transform 0.1s;
+}
+
+.title-container {
+  position: relative;
+  display: inline-block;
+  text-align: center;
+}
+
+.title-container h1 {
+  margin: 0;
+  display: inline-block;
+}
+
+#muteBtn {
+  position: absolute;
+  right: -115px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+}

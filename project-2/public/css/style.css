@@ -85,3 +85,60 @@ input {
   gap: 8px;
   justify-content: center;
 }
+
+button {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #ffffff;
+
+  transition: 
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+button:hover {
+  background: transparent;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+input {
+  padding: 0.65rem 0.8rem;
+  font-size: 1rem;
+  border-radius: 10px;
+
+  background: transparent;
+  color: #ffffff;
+
+  border: 2px solid #ffffff;
+
+  outline: none;
+  transition: 
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+input:focus {
+  border-color: #4ea1ff;
+  box-shadow: 0 0 0 3px rgba(78, 161, 255, 0.25);
+}

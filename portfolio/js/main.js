@@ -1,6 +1,7 @@
 const links = document.querySelectorAll(".hero-nav a")
 const pages = document.querySelectorAll(".page")
 const project1 = document.getElementById("project1")
+const project2 = document.getElementById("project2")
 
 links.forEach(link => {
   link.addEventListener("click", event => {
@@ -25,6 +26,10 @@ links.forEach(link => {
 
 project1.addEventListener("click", () => {
 	window.location.href = "/project-2"
+})
+
+project2.addEventListener("click", () => {
+	window.location.href = "/project-3"
 })
 
 document.querySelector('.hero-nav a[data-section="projects"]').classList.add("active")

@@ -13,18 +13,21 @@ const app = express()
 
 app.use(express.json())
 
-// static files
 app.use("/", express.static(path.join(__dirname, "portfolio")))
 app.use(
   "/project-2",
   express.static(path.join(__dirname, "project-2", "public"))
 )
 app.use(
+  "/project-3",
+  express.static(path.join(__dirname, "project-3", "public"))
+)
+app.use(
   "/project-2/uploads",
   express.static(path.join(__dirname, "project-2", "uploads"))
 )
+app.use("/assets", express.static(path.join(__dirname, "project-3", "assets")))
 
-// routes
 app.use("/", authRoutes)
 app.use("/", uploadRoutes)
 
