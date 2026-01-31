@@ -8,6 +8,7 @@ import uploadRoutes from "./routes/upload.routes.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const PORT = process.env.PORT || 3000
 
 const app = express()
 
@@ -31,6 +32,6 @@ app.use("/assets", express.static(path.join(__dirname, "project-3", "assets")))
 app.use("/", authRoutes)
 app.use("/", uploadRoutes)
 
-app.listen(3000, () => {
-  console.log("server is listening on port 3000!")
+app.listen(PORT, () => {
+  console.log(`server is listening on port ${PORT}!`)
 })
